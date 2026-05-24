@@ -1,4 +1,5 @@
 using API_Food_App.Models;
+using API_Food_App.Services.User;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,14 +7,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen();
 
 // Dependency Injection for DbContext
 builder.Services.AddDbContext<FoodAppContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString(
+            "DefaultConnection"
+        )
+    )
 );
+builder.Services.AddScoped<UserService>();
+
 builder.Services.AddCors(option =>
 {
     option.AddPolicy("AllowAll", builder =>
@@ -33,7 +41,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
 
