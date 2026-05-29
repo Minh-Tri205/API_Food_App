@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System;
 using System.Collections.Generic;
 
 namespace API_Food_App.Models;
@@ -9,12 +10,16 @@ public partial class Order
 
     public int UserId { get; set; }
 
+    [ValidateNever]
     public string OrderCode { get; set; } = null!;
 
+    [ValidateNever]
     public string RecipientName { get; set; } = null!;
 
+    [ValidateNever]
     public string DeliveryAddress { get; set; } = null!;
 
+    [ValidateNever]
     public string DeliveryPhone { get; set; } = null!;
 
     public decimal? DeliveryFee { get; set; }
@@ -45,6 +50,7 @@ public partial class Order
 
     public virtual Review? Review { get; set; }
 
+    [ValidateNever]
     public virtual User User { get; set; } = null!;
 
     public virtual Voucher? Voucher { get; set; }

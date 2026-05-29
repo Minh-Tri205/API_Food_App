@@ -1,12 +1,20 @@
 using API_Food_App.Models;
+using API_Food_App.Services.Order;
 using API_Food_App.Services.User;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+//builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler =
+            ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -21,6 +29,7 @@ builder.Services.AddDbContext<FoodAppContext>(options =>
     )
 );
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<OrderService>();
 
 builder.Services.AddCors(option =>
 {
@@ -42,6 +51,8 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseCors("AllowAll");
 
