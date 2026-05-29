@@ -13,7 +13,7 @@ public partial class Favorite
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual FoodItem Food { get; set; } = null!;
+    public virtual FoodItem? Food { get; set; } = null!;
 
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; } = null!;
 }
