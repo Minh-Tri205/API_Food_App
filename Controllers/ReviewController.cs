@@ -22,7 +22,7 @@ namespace API_Food_App.Controllers
             var reviews = context.Reviews
                 .Include(r => r.User)
                 .Include(r => r.Food)
-                .Include(r => r.Order)
+                .OrderByDescending(r => r.CreatedAt)
                 .ToList();
 
             return Ok(reviews);
@@ -35,80 +35,33 @@ namespace API_Food_App.Controllers
             var review = context.Reviews
                 .Include(r => r.User)
                 .Include(r => r.Food)
-                .Include(r => r.Order)
                 .FirstOrDefault(r => r.ReviewId == id);
-
-            if (review == null)
-            {
-                return NotFound();
-            }
-
+            if (review == null) return NotFound();
             return Ok(review);
         }
 
         // POST: api/review
         [HttpPost]
-        public IActionResult Create(Review review)
+        public async Task<IActionResult> Create([FromBody] Review review)
         {
-            // Check Order exists
-            bool orderExists = context.Orders
-                .Any(o => o.OrderId == review.OrderId);
-
-            if (!orderExists)
-            {
-                return BadRequest(new
-                {
-                    message = "Order does not exist"
-                });
-            }
-
-            // Check User exists
-            bool userExists = context.Users
-                .Any(u => u.UserId == review.UserId);
-
-            if (!userExists)
-            {
-                return BadRequest(new
-                {
-                    message = "User does not exist"
-                });
-            }
-
-            // Check Food exists
-            if (review.FoodId.HasValue)
-            {
-                bool foodExists = context.FoodItems
-                    .Any(f => f.FoodId == review.FoodId);
-
-                if (!foodExists)
-                {
-                    return BadRequest(new
-                    {
-                        message = "Food does not exist"
-                    });
-                }
-            }
-
-            // Rating validation
-            if (review.Rating < 1 || review.Rating > 5)
-            {
-                return BadRequest(new
-                {
-                    message = "Rating must be between 1 and 5"
-                });
-            }
+            var dup = await context.Reviews.AnyAsync(r =>
+                r.OrderId == review.OrderId &&
+                r.FoodId == review.FoodId &&
+                r.UserId == review.UserId);
+            if (dup)
+                return BadRequest(new { message = "Bạn đã đánh giá món này trong đơn này rồi" });
 
             review.CreatedAt = DateTime.Now;
-
             context.Reviews.Add(review);
+            await context.SaveChangesAsync();
 
-            context.SaveChanges();
+            // Reload kem User + Food de Flutter co thong tin khach hang
+            var saved = await context.Reviews
+                .Include(r => r.User)
+                .Include(r => r.Food)
+                .FirstOrDefaultAsync(r => r.ReviewId == review.ReviewId);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = review.ReviewId },
-                review
-            );
+            return Ok(saved);
         }
 
         // PUT: api/review/5

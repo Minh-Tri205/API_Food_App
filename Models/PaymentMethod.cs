@@ -15,5 +15,5 @@ public partial class PaymentMethod
 
     public bool? IsDefault { get; set; }
 
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; } = null!;
 }

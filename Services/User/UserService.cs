@@ -1,4 +1,5 @@
 ﻿using API_Food_App.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -7,6 +8,7 @@ namespace API_Food_App.Services.User
     public class UserService
     {
         private readonly FoodAppContext context;
+
 
         public UserService(FoodAppContext context)
         {
@@ -39,7 +41,7 @@ namespace API_Food_App.Services.User
             return hashInput == hashedPassword;
         }
 
-        // 🔒 Khóa / mở khóa tài khoản
+        //  Khóa / mở khóa tài khoản
         public bool ToggleUserStatus(int userId)
         {
             var user = context.Users.FirstOrDefault(u => u.UserId == userId);
@@ -54,7 +56,7 @@ namespace API_Food_App.Services.User
             return true;
         }
 
-        // 🔒 Khóa tài khoản luôn (force lock)
+        //  Khóa tài khoản luôn (force lock)
         public bool DeactivateUser(int userId)
         {
             var user = context.Users.FirstOrDefault(u => u.UserId == userId);
@@ -69,7 +71,7 @@ namespace API_Food_App.Services.User
             return true;
         }
 
-        // 🔓 Mở tài khoản
+        //  Mở tài khoản
         public bool ActivateUser(int userId)
         {
             var user = context.Users.FirstOrDefault(u => u.UserId == userId);
@@ -84,7 +86,7 @@ namespace API_Food_App.Services.User
             return true;
         }
 
-        // 🔁 Đổi role user
+        // Đổi role user
         public bool ChangeRole(int userId, string newRole)
         {
             var user = context.Users.FirstOrDefault(u => u.UserId == userId);
@@ -102,5 +104,6 @@ namespace API_Food_App.Services.User
             context.SaveChanges();
             return true;
         }
+
     }
 }

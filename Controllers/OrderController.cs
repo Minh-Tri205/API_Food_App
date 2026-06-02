@@ -45,6 +45,7 @@ namespace API_Food_App.Controllers
             var order = context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Food)
                 .Include(o => o.OrderTrackings)
                 .FirstOrDefault(o => o.OrderId == id);
 
@@ -77,25 +78,56 @@ namespace API_Food_App.Controllers
         [HttpPost]
         public IActionResult Create(Order order)
         {
-            order.OrderCode =
-                orderService.GenerateOrderCode();
+            // Validate co mon trong don
+            if (order.OrderItems == null || !order.OrderItems.Any())
+                return BadRequest("Đơn hàng phải có ít nhất 1 món");
 
+            // Load tat ca FoodItem can thiet trong 1 query
+            var foodIds = order.OrderItems
+                .Select(i => i.FoodId)
+                .Distinct()
+                .ToList();
+
+            var foods = context.FoodItems
+                .Where(f => foodIds.Contains(f.FoodId))
+                .ToList();
+
+            // 1. Validate ton kho
+            foreach (var item in order.OrderItems)
+            {
+                var food = foods.FirstOrDefault(f => f.FoodId == item.FoodId);
+                if (food == null)
+                    return BadRequest($"Món id={item.FoodId} không tồn tại");
+
+                if (food.IsActive == false)
+                    return BadRequest($"Món \"{food.Name}\" đã ngừng bán");
+
+                var stock = food.StockQuantity ?? 0;
+                if (stock < item.Quantity)
+                    return BadRequest(
+                        $"Món \"{food.Name}\" chỉ còn {stock}, " +
+                        $"không đủ số lượng {item.Quantity}");
+            }
+
+            // 2. Tru ton kho + tang TotalSold
+            foreach (var item in order.OrderItems)
+            {
+                var food = foods.First(f => f.FoodId == item.FoodId);
+                food.StockQuantity = (food.StockQuantity ?? 0) - item.Quantity;
+                food.TotalSold = (food.TotalSold ?? 0) + item.Quantity;
+            }
+
+            // 3. Defaults cua Order
+            order.OrderCode = orderService.GenerateOrderCode();
             order.Status = "pending";
-
             order.CreatedAt = DateTime.Now;
-
             order.UpdatedAt = DateTime.Now;
-
-            // DEFAULT VALUE
             order.DeliveryFee ??= 0;
-
             order.DiscountAmount ??= 0;
-
             order.TotalAmount ??= 0;
 
             context.Orders.Add(order);
-
-            context.SaveChanges();
+            context.SaveChanges(); // luu order + food updates trong cung 1 transaction
 
             return CreatedAtAction(
                 nameof(GetById),
@@ -103,6 +135,7 @@ namespace API_Food_App.Controllers
                 order
             );
         }
+
 
         // =========================
         // UPDATE
@@ -304,16 +337,48 @@ namespace API_Food_App.Controllers
         [HttpPatch("cancel/{id}")]
         public IActionResult CancelOrder(int id)
         {
-            var result =
-                orderService.CancelOrder(id);
+            var order = context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefault(o => o.OrderId == id);
 
-            if (!result)
+            if (order == null) return NotFound();
+
+            if (order.Status == "cancelled")
+                return BadRequest("Đơn hàng đã bị huỷ");
+
+            if (order.Status == "completed")
+                return BadRequest("Không thể huỷ đơn đã hoàn thành");
+
+            // Hoan tra ton kho
+            if (order.OrderItems != null && order.OrderItems.Any())
             {
-                return NotFound();
+                var foodIds = order.OrderItems
+                    .Select(i => i.FoodId)
+                    .Distinct()
+                    .ToList();
+
+                var foods = context.FoodItems
+                    .Where(f => foodIds.Contains(f.FoodId))
+                    .ToList();
+
+                foreach (var item in order.OrderItems)
+                {
+                    var food = foods.FirstOrDefault(f => f.FoodId == item.FoodId);
+                    if (food != null)
+                    {
+                        food.StockQuantity = (food.StockQuantity ?? 0) + item.Quantity;
+                        food.TotalSold = (int?)Math.Max(0, (int)((food.TotalSold ?? 0) - item.Quantity));
+                    }
+                }
             }
+
+            order.Status = "cancelled";
+            order.UpdatedAt = DateTime.Now;
+            context.SaveChanges();
 
             return Ok("Order cancelled");
         }
+
 
         // =========================
         // GET BY USER ID + STATUS

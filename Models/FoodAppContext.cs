@@ -326,6 +326,23 @@ public partial class FoodAppContext : DbContext
             entity.HasOne(d => d.Voucher).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.VoucherId)
                 .HasConstraintName("FK__orders__voucher___0C85DE4D");
+            base.OnModelCreating(modelBuilder);
+
+            // === KHAI BÁO TRIGGER cho EF Core 7+ ===
+            // Bảng orders có 3 trigger
+            modelBuilder.Entity<Order>()
+                .ToTable(tb =>
+                {
+                    tb.HasTrigger("trg_after_order_created");
+                    tb.HasTrigger("trg_after_order_completed");
+                    tb.HasTrigger("trg_order_status_changed");
+                });
+
+            // Bảng reviews có 1 trigger
+            modelBuilder.Entity<Review>()
+                .ToTable(tb => tb.HasTrigger("trg_update_food_avg_rating"));
+
+            // ... các config khác của bạn giữ nguyên
         });
 
         modelBuilder.Entity<OrderItem>(entity =>

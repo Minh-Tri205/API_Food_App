@@ -21,5 +21,5 @@ public partial class Notification
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; } = null!;
 }

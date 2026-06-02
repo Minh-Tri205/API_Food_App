@@ -51,7 +51,7 @@ public partial class Order
     public virtual Review? Review { get; set; }
 
     [ValidateNever]
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; } = null!;
 
     public virtual Voucher? Voucher { get; set; }
 }

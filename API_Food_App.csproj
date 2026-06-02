@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\Uploads\FoodItems\" />
+    <Folder Include="wwwroot\Uploads\Users\" />
   </ItemGroup>
 
 </Project>
