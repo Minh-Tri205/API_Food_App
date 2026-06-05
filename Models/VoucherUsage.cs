@@ -15,7 +15,7 @@ public partial class VoucherUsage
 
     public DateTime? UsedAt { get; set; }
 
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; } = null!;
 
-    public virtual Voucher Voucher { get; set; } = null!;
+    public virtual Voucher? Voucher { get; set; } = null!;
 }

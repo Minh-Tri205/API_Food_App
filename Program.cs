@@ -1,14 +1,15 @@
 using API_Food_App.Models;
 using API_Food_App.Services.Order;
 using API_Food_App.Services.User;
+using API_Food_App.Services.NotificationService;
+using API_Food_App.Services;
+using API_Food_App.Hubs;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-//builder.Services.AddControllers();
+// Controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -16,34 +17,42 @@ builder.Services.AddControllers()
             ReferenceHandler.IgnoreCycles;
     });
 
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen();
 
-// Dependency Injection for DbContext
+// Database
 builder.Services.AddDbContext<FoodAppContext>(options =>
+{
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString(
-            "DefaultConnection"
-        )
-    )
-);
+        builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+// Dependency Injection
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<VnpayService>();
 
-builder.Services.AddCors(option =>
+// SignalR
+builder.Services.AddSignalR();
+
+// CORS
+builder.Services.AddCors(options =>
 {
-    option.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
+// Build App
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -54,9 +63,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 
+app.UseRouting();
+
 app.UseCors("AllowAll");
 
 app.UseAuthorization();
+
+// Endpoints
+app.MapHub<NotificationHub>("/hubs/notification");
 
 app.MapControllers();
 
